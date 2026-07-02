@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teal Lanka - Mobile Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 12px; background-color: #f1f3f5; color: #212529; }
+        .top-nav { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 5px; -webkit-overflow-scrolling: touch; }
+        .nav-btn { text-decoration: none; padding: 10px 14px; border-radius: 6px; font-weight: bold; font-size: 13px; white-space: nowrap; }
+        .nav-btn.green-btn { background: #00875a; color: white; }
+        .nav-btn.blue-btn { background: #007bff; color: white; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header-section { text-align: center; margin-bottom: 15px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .header-section h2 { margin: 0; color: #1e3d59; font-size: 20px; }
+        .header-section p { margin: 4px 0 0 0; color: #6c757d; font-size: 12px; }
+        .controls { background: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; }
+        .controls label { font-weight: bold; font-size: 13px; color: #495057; }
+        .controls input { padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 15px; width: 100%; box-sizing: border-box; }
+        /* 🔍 Search Input Highlight */
+        .search-input { border: 2px solid #007bff !important; background-color: #f8f9fa; font-weight: bold; }
+        #loadingText { text-align: center; font-weight: bold; padding: 20px; color: #666; }
+        .plant-card { background: white; border-radius: 10px; box-shadow: 0 3px 8px rgba(0,0,0,0.06); margin-bottom: 15px; padding: 14px; border-left: 6px solid #00875a; }
+        .card-row-top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #e9ecef; padding-bottom: 8px; margin-bottom: 10px; }
+        .plant-identity h3 { margin: 0; font-size: 18px; color: #1e3d59; }
+        .plant-identity span { font-size: 13px; color: #6c757d; display: block; margin-top: 2px; }
+        .balance-badge { padding: 6px 12px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 13px; min-width: 80px; }
+        .badge-ok { background-color: #ebfbee; color: #2b8a3e; border: 1px solid #b2f2bb; }
+        .badge-over { background-color: #fff5f5; color: #c92a2a; border: 1px solid #ffa8a8; }
+        .balance-badge small { display: block; font-size: 9px; font-weight: normal; text-transform: uppercase; margin-bottom: 2px; }
+        .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .grid-box { background: #f8f9fa; padding: 8px; border-radius: 6px; border: 1px solid #f1f3f5; }
+        .grid-box .title { font-size: 10px; font-weight: bold; color: #6c757d; text-transform: uppercase; margin-bottom: 4px; }
+        .grid-box .values { font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; }
+        .val-total { border-top: 1px dashed #dee2e6; margin-top: 4px; padding-top: 4px; font-weight: bold; }
+        .company-list { background: #f1f3f5; padding: 8px 10px; border-radius: 6px; font-size: 12px; color: #495057; line-height: 1.4; }
+        .company-list strong { color: #1e3d59; }
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <a href="index.html" class="nav-btn blue-btn">Dashboard Summary</a>
+        <a href="add-order.html" class="nav-btn green-btn">Add Order</a>
+        <a href="orders-list.html" class="nav-btn green-btn">View Active Orders</a>
+        <a href="shipped-history.html" class="nav-btn green-btn">View Shipped History</a>
+    </div>
+    <div class="container">
+        <div class="header-section">
+            <h2>Teal Lanka Bio Tech</h2>
+            <p>Mobile Production & Inventory Dashboard</p>
+        </div>
+        <div class="controls">
+            <div><label>Select Month:</label><input type="month" id="reportMonth"></div>
+            <!-- 💡 Search Box Added Here -->
+            <div><label>Search Plant Code / Variety:</label><input type="text" id="searchBox" class="search-input" placeholder="Type Plant Code to find..."></div>
+        </div>
+        <div id="mobileCardsContainer"><div id="loadingText">Recalculating rolling stock...</div></div>
+    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        const prodConfig = { apiKey: "AIzaSyBRLKdJqdC4kwT4qPvHBPjf1vX2viSBxqg", authDomain: "teal-lanka-daily-production.firebaseapp.com", projectId: "teal-lanka-daily-production" };
+        const stockConfig = { apiKey: "AIzaSyCNsHcWA8LYxK9d2kXYupfHoQfO0j0IOIc", authDomain: "stock-management-b898e.firebaseapp.com", projectId: "stock-management-b898e" };
+        const dbProd = getFirestore(initializeApp(prodConfig, "prodApp"));
+        const dbStock = getFirestore(initializeApp(stockConfig, "stockApp"));
+        
+        document.getElementById('reportMonth').value = new Date().toISOString().substring(0, 7);
+        document.getElementById('reportMonth').addEventListener('change', generateMobileReport);
+        // 💡 Live Search Logic
+        document.getElementById('searchBox').addEventListener('input', filterCards);
+
+        function filterCards() {
+            const query = document.getElementById('searchBox').value.trim().toUpperCase();
+            const cards = document.querySelectorAll('.plant-card');
+            cards.forEach(card => {
+                const codeText = card.getAttribute('data-code') || "";
+                const varietyText = card.getAttribute('data-variety') || "";
+                if (codeText.includes(query) || varietyText.includes(query)) {
+                    card.style.display = "block";
+                } else {
+                    card.style.display = "none";
+                }
+            });
+        }
+
+        async function generateMobileReport() {
+            const container = document.getElementById('mobileCardsContainer');
+            container.innerHTML = `<div id="loadingText">Recalculating rolling stock...</div>`;
+            const selectedMonth = document.getElementById('reportMonth').value;
+            try {
+                const ordersSnapshot = await getDocs(collection(dbStock, "orders"));
+                const prodSnapshot = await getDocs(collection(dbProd, "Production_Records"));
+                let allOrders = [], allProdRecords = [], summaryMap = {}, ordersMap = {};
+                ordersSnapshot.forEach(doc => allOrders.push(doc.data()));
+                prodSnapshot.forEach(doc => allProdRecords.push(doc.data()));
+
+                allProdRecords.forEach(r => {
+                    const code = r.plantCode ? r.plantCode.trim().toUpperCase() : null;
+                    if (code && !summaryMap[code]) summaryMap[code] = { variety: r.variety || "Unknown", multy: 0, rooting: 0, cap1st: 0, cap2nd: 0 };
+                });
+                allOrders.forEach(o => {
+                    const code = o.plantCode ? o.plantCode.trim().toUpperCase() : null;
+                    if (code && !summaryMap[code]) summaryMap[code] = { variety: o.variety || "Ordered Only", multy: 0, rooting: 0, cap1st: 0, cap2nd: 0 };
+                    if (code && !ordersMap[code]) ordersMap[code] = { '1st-15th': { qty: 0, companies: [] }, '16th-End': { qty: 0, companies: [] } };
+                });
+
+                Object.keys(summaryMap).forEach(code => {
+                    let totalMatureStockUpToNow = 0, totalOrdersShippedUpToNow = 0, newMatureCap1st = 0, newMatureCap2nd = 0;
+                    allOrders.forEach(o => {
+                        if (o.plantCode && o.plantCode.trim().toUpperCase() === code && o.status === "Shipped" && o.orderMonth < selectedMonth) {
+                            totalOrdersShippedUpToNow += parseInt(o.orderedQty || 0);
+                        }
+                    });
+                    allProdRecords.forEach(r => {
+                        if (r.plantCode && r.plantCode.trim().toUpperCase() === code && r.date) {
+                            let inputDate = new Date(r.date);
+                            inputDate.setDate(inputDate.getDate() + 30);
+                            let matureMonthStr = inputDate.toISOString().substring(0, 7);
+                            let matureDay = inputDate.getDate();
+                            if (matureMonthStr < selectedMonth) totalMatureStockUpToNow += parseInt(r.rooting || 0);
+                            else if (matureMonthStr === selectedMonth) {
+                                if (matureDay <= 15) newMatureCap1st += parseInt(r.rooting || 0); else newMatureCap2nd += parseInt(r.rooting || 0);
+                            }
+                        }
+                        if (r.plantCode && r.plantCode.trim().toUpperCase() === code && r.date && r.date.startsWith(selectedMonth)) {
+                            summaryMap[code].multy += parseInt(r.multy || 0);
+                            summaryMap[code].rooting += parseInt(r.rooting || 0);
+                        }
+                    });
+                    let rolloverStock = Math.max(0, totalMatureStockUpToNow - totalOrdersShippedUpToNow);
+                    summaryMap[code].cap1st = rolloverStock + newMatureCap1st;
+                    summaryMap[code].cap2nd = newMatureCap2nd;
+                });
+
+                allOrders.forEach(o => {
+                    if (o.orderMonth === selectedMonth && o.status === "Pending") {
+                        const code = o.plantCode ? o.plantCode.trim().toUpperCase() : "UNKNOWN";
+                        const delivery = o.deliveryPeriod;
+                        if (ordersMap[code] && ordersMap[code][delivery]) {
+                            ordersMap[code][delivery].qty += o.orderedQty;
+                            if (!ordersMap[code][delivery].companies.includes(o.companyName)) ordersMap[code][delivery].companies.push(o.companyName);
+                        }
+                    }
+                });
+
+                const sortedCodes = Object.keys(summaryMap).sort();
+                container.innerHTML = "";
+                if (sortedCodes.length === 0) { container.innerHTML = `<div id="loadingText">No records found.</div>`; return; }
+
+                sortedCodes.forEach(code => {
+                    const plant = summaryMap[code];
+                    const ord1st = ordersMap[code] ? ordersMap[code]['1st-15th'] : { qty: 0, companies: [] };
+                    const ord2nd = ordersMap[code] ? ordersMap[code]['16th-End'] : { qty: 0, companies: [] };
+                    const totalCapacity = plant.cap1st + plant.cap2nd;
+                    const totalOrdered = ord1st.qty + ord2nd.qty;
+                    const netRemaining = totalCapacity - totalOrdered;
+                    let allCompanies = [...new Set([...ord1st.companies, ...ord2nd.companies])].join(", ");
+
+                    container.innerHTML += `
+                        <div class="plant-card" data-code="${code}" data-variety="${plant.variety.toUpperCase()}">
+                            <div class="card-row-top">
+                                <div class="plant-identity"><h3>${code}</h3><span>${plant.variety}</span></div>
+                                <div class="balance-badge ${netRemaining < 0 ? 'badge-over' : 'badge-ok'}"><small>Remaining</small>${netRemaining.toLocaleString()}</div>
+                            </div>
+                            <div class="card-grid">
+                                <div class="grid-box">
+                                    <div class="title" style="color:#00875a;">Available Capacity</div>
+                                    <div class="values"><span>1-15:</span> <span>${plant.cap1st.toLocaleString()}</span></div>
+                                    <div class="values"><span>16-End:</span> <span>${plant.cap2nd.toLocaleString()}</span></div>
+                                    <div class="values val-total" style="color:#00875a;"><span>Total:</span> <span>${totalCapacity.toLocaleString()}</span></div>
+                                </div>
+                                <div class="grid-box">
+                                    <div class="title" style="color:#e03131;">Total Ordered</div>
+                                    <div class="values"><span>1-15:</span> <span>${ord1st.qty.toLocaleString()}</span></div>
+                                    <div class="values"><span>16-End:</span> <span>${ord2nd.qty.toLocaleString()}</span></div>
+                                    <div class="values val-total" style="color:#b01a1a;"><span>Total:</span> <span>${totalOrdered.toLocaleString()}</span></div>
+                                </div>
+                            </div>
+                            <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 10px;">
+                                <div style="font-size:11px; background:#f1f3f5; padding:6px; border-radius:4px;">Multy: <strong style="color:#00875a;">${plant.multy}</strong></div>
+                                <div style="font-size:11px; background:#f1f3f5; padding:6px; border-radius:4px;">Rooting: <strong style="color:#007bff;">${plant.rooting}</strong></div>
+                            </div>
+                            ${allCompanies ? `<div class="company-list"><strong>Companies:</strong> ${allCompanies}</div>` : ''}
+                        </div>`;
+                });
+                filterCards(); // Keep search active if user typed during reload
+            } catch (err) { console.error(err); container.innerHTML = `<div id="loadingText" style="color:red;">Error loading records.</div>`; }
+        }
+        generateMobileReport();
+    </script>
+</body>
+</html>
