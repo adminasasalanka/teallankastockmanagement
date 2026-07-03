@@ -1,34 +1,43 @@
-name: Flutter APK Build
+name: Build HTML to APK
 
 on:
   push:
-    branches: [ master ] # ඔයාගේ branch එක master නිසා මෙතන master කලා
+    branches: [ main, master ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Set up Java
+
+    - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
-        distribution: 'zulu'
         java-version: '17'
-        
-    - name: Set up Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: 'any'
-        
-    - name: Install dependencies
-      run: flutter pub get
+        distribution: 'zulu'
 
-    - name: Build APK
-      run: flutter build apk --release
+    - name: Install Cordova
+      run: npm install -g cordova
 
-    - name: Upload APK Artifact
+    - name: Create Cordova Project
+      run: |
+        cordova create stockapp com.stockapp.teallanka TealLankaStock
+        
+        # ඔයාගේ repository එකේ තියෙන HTML/CSS ෆයිල් ටික Cordova එකේ www ෆෝල්ඩරයට කොපි කරනවා
+        # (index.html එක ප්‍රධාන ෆෝල්ඩරයේම තියෙනවා කියා සිතා)
+        rm -rf stockapp/www/*
+        cp -r * stockapp/www/ || true
+        
+        cd stockapp
+        cordova platform add android
+
+    - name: Build Android APK
+      run: |
+        cd stockapp
+        cordova build android --device
+
+    - name: Upload APK Package
       uses: actions/upload-artifact@v4
       with:
-        name: my-release-apk
-        path: build/app/outputs/flutter-apk/app-release.apk
+        name: TealLanka-Stock-APK
+        path: stockapp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
