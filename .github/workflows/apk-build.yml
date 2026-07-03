@@ -1,4 +1,4 @@
-name: Build HTML to APK
+name: Build HTML to APK with Custom Icon
 
 on:
   push:
@@ -23,13 +23,26 @@ jobs:
       run: |
         cordova create stockapp com.stockapp.teallanka TealLankaStock
         
-        # ඔයාගේ repository එකේ තියෙන HTML/CSS ෆයිල් ටික Cordova එකේ www ෆෝල්ඩරයට කොපි කරනවා
-        # (index.html එක ප්‍රධාන ෆෝල්ඩරයේම තියෙනවා කියා සිතා)
+        # HTML ෆයිල් ටික කොපි කිරීම
         rm -rf stockapp/www/*
         cp -r * stockapp/www/ || true
         
         cd stockapp
         cordova platform add android
+        
+        # ඔයා අප්ලෝඩ් කරපු icon.png එක ඇප් එකේ අයිකන් එක විදිහට config එකට එකතු කිරීම
+        cp ../icon.png res/icon.png || true
+        
+        cat <<EOF > config.xml
+        <?xml version='1.0' encoding='utf-8'?>
+        <widget id="com.stockapp.teallanka" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+            <name>TealLanka Stock</name>
+            <description>Teal Lanka Stock Management App</description>
+            <author email="dev@callback.com" href="http://cordova.io">Teal Lanka Team</author>
+            <content src="index.html" />
+            <access origin="*" />
+            <icon src="res/icon.png" />  </widget>
+        EOF
 
     - name: Build Android APK
       run: |
