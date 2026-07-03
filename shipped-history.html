@@ -3,42 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teal Lanka - Shipped History</title>
+    <title>Shipped History</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 12px; background-color: #f1f3f5; }
-        .top-nav { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 5px; }
-        .nav-btn { text-decoration: none; padding: 10px 14px; border-radius: 6px; font-weight: bold; font-size: 13px; white-space: nowrap; }
-        .nav-btn.green-btn { background: #00875a; color: white; }
-        .nav-btn.blue-btn { background: #007bff; color: white; }
-        .container { max-width: 600px; margin: 0 auto; }
-        .controls { background: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; }
-        .controls input { padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 15px; width: 100%; box-sizing: border-box; }
-        .search-input { border: 2px solid #007bff !important; background-color: #f8f9fa; font-weight: bold; }
-        .history-card { background: white; border-radius: 8px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-left: 5px solid #00875a; }
-        .history-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 6px; }
+        :root { --primary: #00875a; --bg: #f8f9fa; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
+        body { background: var(--bg); padding: 15px; padding-bottom: 75px; }
+        h2 { text-align: center; margin-bottom: 15px; font-size: 20px; color: #1a1a1a; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; }
+        #searchBox { grid-column: span 2; }
+        .history-card { background: white; border-radius: 8px; padding: 12px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        .history-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 8px; }
+        .shipped-badge { background: #e6f6f0; color: #00875a; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
         .history-body { font-size: 13px; color: #495057; line-height: 1.5; }
-        .shipped-badge { background: #e8f5e9; color: #00875a; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+        .nav-item { text-decoration: none; color: #6c757d; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 500; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item svg { width: 22px; height: 22px; }
     </style>
 </head>
 <body>
-    <div class="top-nav">
-        <a href="index.html" class="nav-btn green-btn">Dashboard Summary</a>
-        <a href="add-order.html" class="nav-btn green-btn">Add Order</a>
-        <a href="orders-list.html" class="nav-btn green-btn">View Active Orders</a>
-        <a href="shipped-history.html" class="nav-btn blue-btn">View Shipped History</a>
+
+    <h2>Shipped History</h2>
+
+    <div class="controls">
+        <input type="month" id="historyMonth">
+        <input type="text" id="searchBox" placeholder="Search Company or Plant Code...">
     </div>
-    <div class="container">
-        <div class="controls">
-            <div><label style="font-weight:bold; font-size:13px;">Select History Month:</label><input type="month" id="historyMonth"></div>
-            <div><label style="font-weight:bold; font-size:13px;">Search Shipped Code / Company:</label><input type="text" id="searchBox" class="search-input" placeholder="Type Plant Code to filter..."></div>
-        </div>
-        <div id="historyContainer"></div>
-    </div>
+
+    <div id="historyContainer"></div>
+
+    <nav class="nav-bar">
+        <a href="index.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            <span>Dashboard</span>
+        </a>
+        <a href="add-order.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Add Order</span>
+        </a>
+        <a href="orders-list.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span>Orders</span>
+        </a>
+        <a href="shipped-history.html" class="nav-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span>History</span>
+        </a>
+    </nav>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+
         const stockConfig = { apiKey: "AIzaSyCNsHcWA8LYxK9d2kXYupfHoQfO0j0IOIc", authDomain: "stock-management-b898e.firebaseapp.com", projectId: "stock-management-b898e" };
-        const dbStock = getFirestore(initializeApp(stockConfig, "stockApp"));
+        
+        const stockApp = initializeApp(stockConfig, "stockApp");
+        const dbStock = getFirestore(stockApp);
+        const authStock = getAuth(stockApp);
+
+        async function startSecureSession() {
+            try {
+                await signInAnonymously(authStock);
+                loadHistory();
+            } catch (err) {
+                document.getElementById('historyContainer').innerHTML = "<p style='text-align:center; color:red;'>🔒 Connection Locked.</p>";
+            }
+        }
 
         document.getElementById('historyMonth').value = new Date().toISOString().substring(0, 7);
         document.getElementById('historyMonth').addEventListener('change', loadHistory);
@@ -46,22 +78,20 @@
 
         function filterHistory() {
             const query = document.getElementById('searchBox').value.trim().toUpperCase();
-            const cards = document.querySelectorAll('.history-card');
-            cards.forEach(card => {
+            document.querySelectorAll('.history-card').forEach(card => {
                 const code = card.getAttribute('data-code') || "";
                 const company = card.getAttribute('data-company') || "";
-                if(code.includes(query) || company.includes(query)) card.style.display = "block";
-                else card.style.display = "none";
+                card.style.display = (code.includes(query) || company.includes(query)) ? "block" : "none";
             });
         }
 
         async function loadHistory() {
-            const container = document.getElementById('historyContainer'); container.innerHTML = "<p style='text-align:center;'>Loading shipped logs...</p>";
+            const container = document.getElementById('historyContainer'); container.innerHTML = "<p style='text-align:center;'>Loading...</p>";
             const selectedMonth = document.getElementById('historyMonth').value;
             try {
                 const q = query(collection(dbStock, "orders"), where("orderMonth", "==", selectedMonth), where("status", "==", "Shipped"));
                 const snap = await getDocs(q); container.innerHTML = "";
-                if (snap.empty) { container.innerHTML = "<p style='text-align:center;'>No history found for this month.</p>"; return; }
+                if (snap.empty) { container.innerHTML = "<p style='text-align:center;'>No shipped records found.</p>"; return; }
                 
                 snap.forEach(doc => {
                     const data = doc.data();
@@ -69,20 +99,19 @@
                     card.setAttribute('data-code', data.plantCode.toUpperCase());
                     card.setAttribute('data-company', data.companyName.toUpperCase());
                     card.innerHTML = `
-                        <div class="history-card">
-                            <div class="history-header"><span>${data.companyName}</span><span class="shipped-badge">Shipped: ${data.shippedDate || 'N/A'}</span></div>
-                            <div class="history-body">
-                                <strong>Plant:</strong> ${data.plantCode} - ${data.variety || data.plantName || 'N/A'}<br>
-                                <strong>Scheduled:</strong> ${data.orderMonth} (${data.deliveryPeriod})<br>
-                                <strong>Shipped Qty:</strong> <span style="font-weight:bold; color:#00875a;">${data.orderedQty.toLocaleString()}</span>
-                            </div>
+                        <div class="history-header"><span>${data.companyName}</span><span class="shipped-badge">Shipped: ${data.shippedDate || 'N/A'}</span></div>
+                        <div class="history-body">
+                            <strong>Plant:</strong> ${data.plantCode} - ${data.variety || 'N/A'}<br>
+                            <strong>Scheduled:</strong> ${data.orderMonth} (${data.deliveryPeriod})<br>
+                            <strong>Shipped Qty:</strong> <span style="font-weight:bold; color:#00875a;">${data.orderedQty.toLocaleString()}</span>
                         </div>`;
                     container.appendChild(card);
                 });
                 filterHistory();
-            } catch (err) { console.error(err); }
+            } catch (err) { container.innerHTML = "<p>Error loading.</p>"; }
         }
-        loadHistory();
+
+        startSecureSession();
     </script>
 </body>
 </html>
