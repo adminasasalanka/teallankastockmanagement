@@ -47,12 +47,13 @@
         const dbStock = getFirestore(stockApp);
         const authStock = getAuth(stockApp);
 
+        // 🔐 Security Patch
         async function startSecureSession() {
             try {
                 await signInAnonymously(authStock);
                 loadActiveOrders();
             } catch (err) {
-                document.getElementById('ordersContainer').innerHTML = "<p style='text-align:center; color:red;'>🔒 Access Refused.</p>";
+                document.getElementById('ordersContainer').innerHTML = "<p style='text-align:center; color:red;'>🔒 Security Refused.</p>";
             }
         }
 
@@ -85,7 +86,7 @@
                     card.innerHTML = `
                         <div class="card-header"><span>${data.companyName}</span><span style="color:#007bff;">${data.plantCode}</span></div>
                         <div class="card-body">
-                            <strong>Variety:</strong> ${data.variety || 'N/A'}<br>
+                            <strong>Variety:</strong> ${data.variety || data.plantName || 'N/A'}<br>
                             <strong>Period:</strong> ${data.deliveryPeriod}<br>
                             <strong>Quantity:</strong> <span style="font-weight:bold; color:#c92a2a;">${data.orderedQty.toLocaleString()}</span>
                         </div>
@@ -97,13 +98,13 @@
                     btn.addEventListener('click', async (e) => {
                         if(confirm("Confirm this order is shipped?")) {
                             const oId = e.target.getAttribute('data-id');
-                            await updateDoc(doc(dbStock, "orders", oId), { status: "Shipped", shippedDate: new Date().toISOString().split('T')[0] });
+                            await updateDoc(doc(dbStock, \"orders\", oId), { status: "Shipped", shippedDate: new Date().toISOString().split('T')[0] });
                             loadActiveOrders();
                         }
                     });
                 });
                 filterOrders();
-            } catch (err) { container.innerHTML = "<p>Error loading records.</p>"; }
+            } catch (err) { console.error(err); }
         }
 
         startSecureSession();
