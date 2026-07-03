@@ -1,1 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teal Lanka - Add Order</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 12px; background-color: #f1f3f5; }
+        .top-nav { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 5px; }
+        .nav-btn { text-decoration: none; padding: 10px 14px; border-radius: 6px; font-weight: bold; font-size: 13px; white-space: nowrap; }
+        .nav-btn.green-btn { background: #00875a; color: white; }
+        .nav-btn.blue-btn { background: #007bff; color: white; }
+        .form-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); max-width: 650px; margin: 0 auto; border-top: 5px solid #00875a; }
+        .form-card h2 { margin: 0 0 15px 0; font-size: 18px; color: #333; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; color: #495057; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 5px; font-size: 14px; box-sizing: border-box; }
+        .form-group input:disabled { background-color: #e9ecef; color: #495057; }
+        #codeStatus { font-size: 12px; margin-top: 4px; font-weight: bold; height: 15px; }
+        .submit-btn { width: 100%; padding: 12px; background: #00875a; color: white; border: none; border-radius: 5px; font-size: 15px; font-weight: bold; cursor: pointer; }
+        .submit-btn:disabled { background: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <a href="index.html" class="nav-btn blue-btn">Dashboard Summary</a>
+        <a href="add-order.html" class="nav-btn green-btn">Add Order</a>
+        <a href="orders-list.html" class="nav-btn blue-btn">View Active Orders</a>
+        <a href="shipped-history.html" class="nav-btn blue-btn">View Shipped History</a>
+    </div>
+    <div class="form-card">
+        <h2>Add Customer Order</h2>
+        <form id="orderForm">
+            <div class="form-group">
+                <label>Company Name</label>
+                <input type="text" id="companyName" placeholder="Enter company name" required>
+            </div>
+            <div class="form-group">
+                <label>Plant Code</label>
+                <input type="text" id="plantCode" placeholder="Enter plant code (e.g. P001)" required>
+                <div id="codeStatus"></div>
+            </div>
+            <div class="form-group">
+                <label>Variety Name</label>
+                <input type="text" id="variety" placeholder="Auto-filled from database" disabled required>
+            </div>
+            <div class="form-group">
+                <label>Order Month</label>
+                <input type="month" id="orderMonth" required>
+            </div>
+            <div class="form-group">
+                <label>Delivery Period</label>
+                <select id="deliveryPeriod">
+                    <option value="1st-15th">1st - 15th</option>
+                    <option value="16th-End">16th - End</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Ordered Quantity</label>
+                <input type="number" id="orderedQty" placeholder="Enter quantity" required>
+            </div>
+            <button type="submit" class="submit-btn" id="submitBtn">Save Order</button>
+        </form>
+    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, collection, doc, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        
+        const prodConfig = { apiKey: "AIzaSyBRLKdJqdC4kwT4qPvHBPjf1vX2viSBxqg", authDomain: "teal-lanka-daily-production.firebaseapp.com", projectId: "teal-lanka-daily-production" };
+        const stockConfig = { apiKey: "AIzaSyCNsHcWA8LYxK9d2kXYupfHoQfO0j0IOIc", authDomain: "stock-management-b898e.firebaseapp.com", projectId: "stock-management-b898e" };
+        
+        const prodApp = initializeApp(prodConfig, "prodApp");
+        const stockApp = initializeApp(stockConfig, "stockApp");
 
+        const dbProd = getFirestore(prodApp);
+        const dbStock = getFirestore(stockApp);
+
+        const authProd = getAuth(prodApp);
+        const authStock = getAuth(stockApp);
+
+        async function initSecureAuth() {
+            try {
+                await signInAnonymously(authProd);
+                await signInAnonymously(authStock);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        initSecureAuth();
+
+        document.getElementById('orderMonth').value = new Date().toISOString().substring(0, 7);
+
+        document.getElementById('plantCode').addEventListener('change', async (e) => {
+            const rawCode = e.target.value.trim();
+            const typedCode = rawCode.toUpperCase();
+            const varietyInput = document.getElementById('variety');
+            const statusDiv = document.getElementById('codeStatus');
+
+            if (!typedCode) { varietyInput.value = ""; varietyInput.disabled = true; statusDiv.innerText = ""; return; }
+            statusDiv.style.color = "#007bff"; statusDiv.innerText = `Searching...`; varietyInput.value = "";
+
+            try {
+                const docRef = doc(dbProd, "Plants", typedCode);
+                let docSnap = await getDoc(docRef);
+                if (!docSnap.exists() && rawCode !== typedCode) {
+                    docSnap = await getDoc(doc(dbProd, "Plants", rawCode));
+                }
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    varietyInput.value = data.varietyName ? data.varietyName.trim() : "Unknown";
+                    varietyInput.disabled = true;
+                    statusDiv.style.color = "#00875a"; statusDiv.innerText = "✓ Variety Auto-filled From Database";
+                } else {
+                    varietyInput.disabled = false; statusDiv.style.color = "#e67e22"; statusDiv.innerText = "⚠ Code not found. Type Variety manually."; varietyInput.focus();
+                }
+            } catch (err) {
+                varietyInput.disabled = false; statusDiv.style.color = "red"; statusDiv.innerText = "❌ Connection error.";
+            }
+        });
+
+        document.getElementById('orderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.innerText = "Saving...";
+            const pCode = document.getElementById('plantCode').value.trim().toUpperCase();
+            const vName = document.getElementById('variety').value.trim();
+
+            try {
+                await addDoc(collection(dbStock, "orders"), {
+                    companyName: document.getElementById('companyName').value.trim(),
+                    plantCode: pCode,
+                    variety: vName,
+                    orderMonth: document.getElementById('orderMonth').value,
+                    deliveryPeriod: document.getElementById('deliveryPeriod').value,
+                    orderedQty: parseInt(document.getElementById('orderedQty').value),
+                    status: "Pending",
+                    timestamp: new Date().toISOString()
+                });
+                alert("Order Saved successfully!"); 
+                document.getElementById('orderForm').reset();
+                document.getElementById('orderMonth').value = new Date().toISOString().substring(0, 7);
+                document.getElementById('variety').disabled = true;
+                document.getElementById('codeStatus').innerText = "";
+            } catch (err) { 
+                console.error(err); 
+                alert("Error saving order!"); 
+            } finally { 
+                btn.disabled = false; 
+                btn.innerText = "Save Order"; 
+            }
+        });
+    </script>
+</body>
+</html>
